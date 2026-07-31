@@ -21,3 +21,7 @@ all the code for my youtube videos
 ```bash
 ffmpeg -framerate 30 -i ./renders/<name>/%012d.png -c:v libx264 -pix_fmt yuv420p ./renders/<name>.mp4
 ```
+
+```bash
+ffmpeg -i ./renders/<name>.mp4 -i ./renders/<name>.wav -c:v copy -c:a aac -shortest ./renders/<name>-final.mp4
+```

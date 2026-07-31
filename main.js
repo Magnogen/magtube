@@ -28,6 +28,16 @@ Bun.serve({
       return new Response("ok");
     }
 
+    if (req.method === "POST" && url.pathname === "/audio") {
+      const name = url.searchParams.get("name") ?? "project";
+
+      const file = join(RENDERS, `${name}.wav`);
+
+      await writeFile(file, Buffer.from(await req.arrayBuffer()));
+
+      return new Response("ok");
+    }
+
     let path = url.pathname;
 
     if (path === "/")
