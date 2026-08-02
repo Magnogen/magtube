@@ -14,7 +14,7 @@ all the code for my youtube videos
     ```bash
     bun run main.js
     ```
-4.  open the link it logged to the console (should be `http://localhost:8080/`)
+4.  open the link it logged to the console (should be `http://localhost:9999/`)
 
 ### to render
 

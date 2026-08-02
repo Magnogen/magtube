@@ -6,8 +6,10 @@ const RENDERS = "./renders";
 
 await mkdir(RENDERS, { recursive: true });
 
+const port = 9999;
+
 Bun.serve({
-  port: 8080,
+  port,
   async fetch(req) {
     const url = new URL(req.url);
 
@@ -54,4 +56,4 @@ Bun.serve({
   },
 });
 
-console.log("server running on http://localhost:8080/");
+console.log(`server running on http://localhost:${port}/`);

@@ -119,8 +119,8 @@ const Sound = () => {
   const parseParam = (p) => (typeof p === 'function' ? p : () => p);
   const wrap = (p) => ((p % 1) + 1) % 1;
 
-  const createOscillator = (waveShapeFn) => (freqParam, phaseOffset = 0) => {
-    const f = parseParam(freqParam);
+  const createOscillator = (waveShapeFn) => (freq, phaseOffset = 0) => {
+    const f = parseParam(freq);
     const offset = parseParam(phaseOffset);
 
     let phase = 0;
@@ -166,7 +166,50 @@ const Sound = () => {
       const fns = params.map(parseParam);
       return (t, n, sampleRate) => fns.reduce((acc, fn) => acc * fn(t, n, sampleRate), 1);
     },
-    exp: (beta) => (t) => Math.exp(-beta * t),
+    exp: (curve) => (t) => Math.exp(-curve * t),
+    adsr: ({
+      attack = 0.01,
+      decay = 0.1,
+      sustain = 0.7,
+      release = 0.2,
+      gate = 1.0,
+    } = {}) => (t) => {
+      if (t < 0) return 0;
+      if (t < attack) return t / attack;
+      t -= attack;
+      if (t < decay) return 1 - (1 - sustain) * (t / decay);
+      t -= decay;
+      const sustainTime = Math.max(0, gate - attack - decay);
+      if (t < sustainTime) return sustain;
+      t -= sustainTime;
+      if (t < release) return sustain * (1 - t / release);
+      return 0;
+    },
+    expAdsr: ({
+      attack = 0.01,
+      decay = 0.1,
+      sustain = 0.7,
+      release = 0.2,
+      gate = 1.0,
+      curve = 6,
+    } = {}) => {
+      const rise = (x) =>
+        (1 - Math.exp(-curve * x)) /
+        (1 - Math.exp(-curve));
+      const fall = (x) => Math.exp(-curve * x);
+      return (t) => {
+        if (t < 0) return 0;
+        if (t < attack) return rise(t / attack);
+        t -= attack;
+        if (t < decay) return sustain + (1 - sustain) * fall(t / decay);
+        t -= decay;
+        const sustainTime = Math.max(0, gate - attack - decay);
+        if (t < sustainTime) return sustain;
+        t -= sustainTime;
+        if (t < release) return sustain * fall(t / release);
+        return 0;
+      };
+    },
     delay: (
       input,
       delayTime = 0.3,
