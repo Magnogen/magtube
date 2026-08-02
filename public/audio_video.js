@@ -139,7 +139,7 @@ const Sound = () => {
   
   const NOTE_MAP = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   
-  return {
+  const api = {
     n: (str) => {
       const [_, name, accidental, oct] = str.match(/([A-G])([#b]?)(-?\d+)/);
       let semitone = NOTE_MAP[name];
@@ -167,5 +167,101 @@ const Sound = () => {
       return (t, n, sampleRate) => fns.reduce((acc, fn) => acc * fn(t, n, sampleRate), 1);
     },
     exp: (beta) => (t) => Math.exp(-beta * t),
+    delay: (
+      input,
+      delayTime = 0.3,
+      feedback = 0.4,
+      mix = 0.5
+    ) => {
+      const src = parseParam(input);
+
+      let buffer = null;
+      let index = 0;
+      let lastSampleRate = null;
+
+      return (t, n, sampleRate) => {
+        if (!buffer || sampleRate !== lastSampleRate) {
+          const size = Math.max(1, Math.round(delayTime * sampleRate));
+          buffer = new Float32Array(size);
+          index = 0;
+          lastSampleRate = sampleRate;
+        }
+
+        const dry = src(t, n, sampleRate);
+        const delayed = buffer[index];
+
+        buffer[index] = dry + delayed * feedback;
+
+        index++;
+        if (index >= buffer.length) index = 0;
+
+        return dry * (1 - mix) + delayed * mix;
+      };
+    },
+    comb: (input, delayTime, feedback) => {
+      const src = parseParam(input);
+      let buffer = null, index = 0, lastSR = 0;
+
+      return (t, n, sr) => {
+        if (!buffer || sr !== lastSR) {
+          buffer = new Float32Array(Math.max(1, Math.round(delayTime * sr)));
+          index = 0;
+          lastSR = sr;
+        }
+
+        const x = src(t, n, sr);
+        const y = buffer[index];
+
+        buffer[index] = x + y * feedback;
+
+        index = (index + 1) % buffer.length;
+        return y;
+      };
+    },
+    allpass: (input, delayTime, gain = 0.5) => {
+      const src = parseParam(input);
+      let buffer = null, index = 0, lastSR = 0;
+
+      return (t, n, sr) => {
+        if (!buffer || sr !== lastSR) {
+          buffer = new Float32Array(Math.max(1, Math.round(delayTime * sr)));
+          index = 0;
+          lastSR = sr;
+        }
+
+        const x = src(t, n, sr);
+        const buf = buffer[index];
+
+        const y = -gain * x + buf;
+        buffer[index] = x + gain * y;
+
+        index = (index + 1) % buffer.length;
+        return y;
+      };
+    },
+    reverb: (input, { room = 0.8, damp = 0.6, mix = 0.3 } = {}) => {
+      const src = parseParam(input);
+      const combs = [
+        api.comb(src, 0.0371, room * damp),
+        api.comb(src, 0.0411, room * damp),
+        api.comb(src, 0.0437, room * damp),
+        api.comb(src, 0.0297, room * damp),
+      ];
+
+      const combSum = (t, n, sr) =>
+        combs.reduce((s, c) => s + c(t, n, sr), 0) / combs.length;
+
+      const ap1 = api.allpass(combSum, 0.005, 0.7);
+      const ap2 = api.allpass(ap1,    0.0017, 0.7);
+
+      return (t, n, sr) => {
+        const dry = src(t, n, sr);
+        const wet = ap2(t, n, sr);
+
+        return dry * (1 - mix) + wet * mix;
+      };
+    },
   };
+
+  return api;
 };
