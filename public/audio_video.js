@@ -5,7 +5,7 @@ const Video = (name = 'project', fps = 30) => {
     frame: () => frame,
     save: async (canvas) => {
       const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
-      await fetch(`http://localhost:8080/upload?name=${name}&frame=${frame}`, {
+      await fetch(`/upload?name=${name}&frame=${frame}`, {
         method: "POST",
         body: blob,
       });
@@ -97,7 +97,14 @@ const Audio = (name = "project", fps = 30, { sampleRate = 48000, channels = 1 } 
         const n = startSample + i;
         const t = n / sampleRate;
         
-        data.push(fn(t, n, sampleRate)); 
+        const value = fn(t, n, sampleRate);
+
+        if (typeof value != 'number') {
+          console.error(value);
+          throw new Error('Expected number, but got above ^');
+        }
+
+        data.push(value);
         samples++;
       }
 
@@ -107,7 +114,7 @@ const Audio = (name = "project", fps = 30, { sampleRate = 48000, channels = 1 } 
 
     async save() {
       const wav = encodeWav(Float32Array.from(data), sampleRate, channels);
-      await fetch(`http://localhost:8080/audio?name=${name}`, {
+      await fetch(`/audio?name=${name}`, {
         method: 'POST',
         body: wav
       });
