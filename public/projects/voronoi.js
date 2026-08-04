@@ -2,19 +2,19 @@ const video = Video('voronoi', 30);
 const audio = Audio('voronoi', 30);
 
 const { n, sin, triangle, add, mul, expAdsr, delay, reverb } = Sound();
+// also use <script src="https://d3js.org/d3-voronoi.v1.min.js"></script>
 
 let start = 1;
 let note = 440;
 
 const env = t => expAdsr({
-  attack: 0,
-  release: 2,
+  attack: 0.01,
+  release: 1,
   gate: 0,
   curve: 4,
-})(t - start)
+})(t - start) * 0.6;
 
 const sound = mul(sin(() => note), env);
-// const sound = delay(music, 0.25, 0.25, 0.25);
 
 on('load', async () => {
   const [width, height] = [1920, 1080];
@@ -28,44 +28,27 @@ on('load', async () => {
     ctx.fill();
   };
 
-  function rgb(hex) {
-    return [
-      (hex >> 16) & 255,
-      (hex >> 8) & 255,
-      hex & 255
-    ];
-  }
-
   const sites = [];
-  function renderVoronoi(radius, dist = (x, y) => (x**2 + y**2)**(1/2)) {
-    const img = ctx.createImageData(width, height);
-    const data = img.data;
+  function renderVoronoi(radius) {
+    ctx.fillStyle = '#101010';
+    ctx.fillRect(0, 0, width, height);
 
-    for (let py = 0; py < height; py++) {
-      for (let px = 0; px < width; px++) {
-        let best = Infinity;
-        let color = 0x101010;
-
-        for (const s of sites) {
-          const dx = px - s.x;
-          const dy = py - s.y;
-          const d = dist(dx, dy);
-
-          if (d < best && d < radius) {
-            best = d;
-            color = s.color;
-          }
-        }
-
-        const i = (py * width + px) * 4;
-        data[i+0] = (color >> 16) & 255;
-        data[i+1] = (color >> 8) & 255;
-        data[i+2] = color & 255;
-        data[i+3] = 255;
+    const voronoi = d3.voronoi().size([width, height]).x(d => d.x).y(d => d.y);
+    const polys = voronoi(sites).polygons();
+    
+    for (const poly of polys) {
+      if (!poly) continue;
+      
+      ctx.save();
+      ctx.beginPath();
+      for (const [x, y] of poly) {
+        ctx.lineTo(x, y);
       }
+      ctx.clip();
+      
+      circle(poly.data.x, poly.data.y, radius, poly.data.color);
+      ctx.restore();
     }
-
-    ctx.putImageData(img, 0, 0);
   }
 
   const circles = [];
@@ -78,11 +61,18 @@ on('load', async () => {
       
       circle(x, y, (1 - env(video.time())) * height / 64, color);
       
+      const ringRadius = (video.time() - time) * 300;
+      ctx.strokeStyle = `#${color.toString(16).padStart(6, '0')}`;
+      ctx.lineWidth = 4 * env(video.time());
+      ctx.beginPath();
+      ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
       await video.save(c);
       audio.pushFrame(sound);
     }
 
-    circles.push([x, y, color]);
+    circles.push([ x, y, color ]);
     sites.push({ x, y, color });
   }
 
@@ -99,6 +89,21 @@ on('load', async () => {
     await video.save(c);
     audio.pushFrame(sound);
   }
+
+  while (video.time() < 42) {
+    const t = Math.min(video.time() - 24, 1);
+    sites.forEach((site, i) => {
+      site.x += Math.sin(video.time() + i*2) * t**2;
+      site.y += Math.cos(video.time() + i*2) * t**2;
+    });
+
+    renderVoronoi(height);
+
+    await video.save(c);
+    audio.pushFrame(sound);
+  }
+
+
 
   audio.save();
 });
