@@ -15,9 +15,7 @@ on('load', async () => {
   title.y.target = height/2;
   title.y.springiness = 0.5;
 
-  while (vid.time() < 5) {
-    await vid.capture();
-  }
+  await vid.wait(5);
 
   const sub = vid.Widget.Text('This is a widget test');
   sub.style.size = width/32;
@@ -28,7 +26,5 @@ on('load', async () => {
   sub.progress.target = 1.1;
   sub.progress.frequency = 0.3;
 
-  while (vid.time() < 10) {
-    await vid.capture();
-  }
+  await vid.wait(5);
 });

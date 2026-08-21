@@ -22,10 +22,34 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
   canvas.width = width;
   canvas.height = height;
   const advance = () => {
+    const ctx = canvas.getContext('2d');
+    for (const widget of widgets) {
+      widget.drawTo(ctx);
+      widget.advance(1 / fps);
+    }
     frame++;
     const $progress = document.querySelector('#video-progress');
     $progress.textContent = `${frame} frame${frame == 1 ? '' : 's'} rendered (${(frame / fps).toFixed(2)}s)`;
   };
+  const capture = async () => {
+    advance();
+    const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+    await fetch(`/upload?name=${name}&frame=${frame}`, {
+      method: "POST",
+      body: blob,
+    });
+  };
+  const wait = async (time, doCapture = true) => {
+    const start = frame / fps;
+    while (frame / fps < start + time) {
+      if (doCapture) {
+        await capture();
+      } else {
+        advance();
+        await new Promise(requestAnimationFrame);
+      }
+    }
+  }
 
   const IS_SPRING = Symbol();
   const isPlainObject = (value) => (
@@ -258,18 +282,7 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
     time: () => frame / fps,
     frame: () => frame,
     advance,
-    capture: async () => {
-      const ctx = canvas.getContext('2d');
-      for (const widget of widgets) {
-        widget.drawTo(ctx);
-        widget.advance(1 / fps);
-      }
-      const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
-      await fetch(`/upload?name=${name}&frame=${frame}`, {
-        method: "POST",
-        body: blob,
-      });
-      advance();
-    },
+    capture,
+    wait,
   }
 };
