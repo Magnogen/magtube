@@ -4,7 +4,7 @@ const vid = Video('widgettest', width, height, 30);
 on('load', async () => {
   // const ctx = vid.canvas.getContext('2d');
   
-  const bgcol = cyan;
+  const bgcol = cyan.lighten(0.1);
   const bg = vid.Widget.Background(bgcol);
   
   const title = vid.Widget.Text('Hello, World!');
@@ -14,9 +14,9 @@ on('load', async () => {
   title.x = width/2;
   title.y = height/2 + height/8;
   title.y.target = height/2 - height/16;
-  title.y.springiness = 0.5;
+  title.y.stiffness = 0.5;
   title.transform.squash.velocity = 1;
-  title.transform.squash.springiness = 0.25;
+  title.transform.squash.stiffness = 0.25;
 
   await vid.wait(0.5);
 
@@ -28,7 +28,7 @@ on('load', async () => {
   sub.y = height/2 + height/8;
   sub.transform.squash = -0.75;
   sub.transform.squash.target = 0;
-  sub.transform.squash.springiness = 0.25;
+  sub.transform.squash.stiffness = 0.25;
 
   await vid.wait(5);
 });

@@ -119,14 +119,14 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
     let yd = 0;
 
     let frequency = options.frequency ?? 1;
-    let springiness = options.springiness ?? 1;
+    let stiffness = options.stiffness ?? 1;
     let response = options.response ?? 0;
 
     let k1, k2, k3;
     const updateConstants = () => {
-      k1 = springiness / (Math.PI * frequency);
+      k1 = stiffness / (Math.PI * frequency);
       k2 = 1 / ((2 * Math.PI * frequency) ** 2);
-      k3 = response * springiness / (2 * Math.PI * frequency);
+      k3 = response * stiffness / (2 * Math.PI * frequency);
     };
     updateConstants();
 
@@ -150,8 +150,8 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
       set velocity(v) { yd = v; },
       get frequency() { return frequency; },
       set frequency(v) { frequency = v; updateConstants(); },
-      get springiness() { return springiness; },
-      set springiness(v) { springiness = v; updateConstants(); },
+      get stiffness() { return stiffness; },
+      set stiffness(v) { stiffness = v; updateConstants(); },
       get response() { return response; },
       set response(v) { response = v; updateConstants(); },
       set(v) { this.value = v; return this; },
@@ -170,14 +170,14 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
     let yd = color(0, 0, 0, 0);
 
     let frequency = options.frequency ?? 1;
-    let springiness = options.springiness ?? 0.5;
+    let stiffness = options.stiffness ?? 0.5;
     let response = options.response ?? 0;
 
     let k1, k2, k3;
     const updateConstants = () => {
-      k1 = springiness / (Math.PI * frequency);
+      k1 = stiffness / (Math.PI * frequency);
       k2 = 1 / ((2 * Math.PI * frequency) ** 2);
-      k3 = response * springiness / (2 * Math.PI * frequency);
+      k3 = response * stiffness / (2 * Math.PI * frequency);
     };
     updateConstants();
 
@@ -225,8 +225,8 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
       set velocity(v) { yd = v; },
       get frequency() { return frequency; },
       set frequency(v) { frequency = v; updateConstants(); },
-      get springiness() { return springiness; },
-      set springiness(v) { springiness = v; updateConstants(); },
+      get stiffness() { return stiffness; },
+      set stiffness(v) { stiffness = v; updateConstants(); },
       get response() { return response; },
       set response(v) { response = v; updateConstants(); },
       set(v) { this.value = v; return this; },
