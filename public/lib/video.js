@@ -1,18 +1,50 @@
-const color = (l, c, h, a = 1) => ({
-  l: ((l % 360) + 360) % 360, c, h, a,
-  chroma(v) { return color(this.l, v, this.h, this.a); },
-  lightness(v) { return color(v, this.c, this.h, this.a); },
-  hue(v) { return color(this.l, this.c, v, this.a); },
-  alpha(v) { return color(this.l, this.c, this.h, v); },
-  css() { return `oklch(${this.l} ${this.c} ${this.h} / ${this.a})`; }
+const color = (l, a, b, t = 1) => ({
+  l, a, b, t,
+  lightness(v) { return color(v, this.a, this.b, this.t); },
+  lighten(d) { return this.lightness(this.l + d); },
+  darken(d)  { return this.lightness(this.l - d); },
+  chroma(v) {
+    const h = Math.atan2(this.b, this.a);
+    return color(
+      this.l,
+      v * Math.cos(h),
+      v * Math.sin(h),
+      this.t,
+    );
+  },
+  sat(d)   { return this.chroma(Math.max(0, Math.sqrt(this.a ** 2 + this.b ** 2) + d)); },
+  desat(d) { return this.chroma(Math.max(0, Math.sqrt(this.a ** 2 + this.b ** 2) - d)); },
+  hue(deg) {
+    const c = Math.sqrt(this.a ** 2 + this.b ** 2);
+    const rad = deg * Math.PI / 180;
+    return color(
+      this.l,
+      c * Math.cos(rad),
+      c * Math.sin(rad),
+      this.t
+    );
+  },
+  rotate(d) { return this.hue(Math.atan2(this.b, this.a)*180/Math.PI  + d); },
+  alpha(v) { return color(this.l, this.a, this.b, v); },
+  css() { return `oklab(${this.l} ${this.a} ${this.b} / ${this.t})`; }
 });
 
-const red   = color(0.5, 0.5, 29);
-const green = color(0.5, 0.5, 145);
-const blue  = color(0.5, 0.5, 260);
-const black = color(0, 0, 0);
-const white = color(1, 0, 0);
-const gray  = (l) => color(l, 0, 0);
+const red     = color(0.5, 0, 0).chroma(0.2).hue(20 +  0*360/12);
+const orange  = color(0.6, 0, 0).chroma(0.2).hue(20 +  1*360/12);
+const yellow  = color(0.7, 0, 0).chroma(0.2).hue(20 +  2*360/12);
+const lime    = color(0.6, 0, 0).chroma(0.2).hue(20 +  3*360/12);
+const green   = color(0.5, 0, 0).chroma(0.2).hue(20 +  4*360/12);
+const teal    = color(0.5, 0, 0).chroma(0.2).hue(20 +  5*360/12);
+const cyan    = color(0.5, 0, 0).chroma(0.2).hue(20 +  6*360/12);
+const azure   = color(0.5, 0, 0).chroma(0.2).hue(20 +  7*360/12);
+const blue    = color(0.5, 0, 0).chroma(0.2).hue(20 +  8*360/12);
+const purple  = color(0.5, 0, 0).chroma(0.2).hue(20 +  9*360/12);
+const magenta = color(0.5, 0, 0).chroma(0.2).hue(20 + 10*360/12);
+const rose    = color(0.5, 0, 0).chroma(0.2).hue(20 + 11*360/12);
+
+const black   = color(0, 0, 0);
+const white   = color(1, 0, 0);
+const gray    = (l) => color(l, 0, 0);
 
 const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
   let frame = 0;
@@ -135,7 +167,7 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
     let x = initial;
     let xp = initial;
     let y = initial;
-    let yd = { l: 0, c: 0, h: 0, a: 0 };
+    let yd = color(0, 0, 0, 0);
 
     let frequency = options.frequency ?? 1;
     let springiness = options.springiness ?? 0.5;
@@ -155,9 +187,9 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
       if (dt <= 0) return;
       const xd = color(
         (x.l - xp.l) / dt,
-        (x.c - xp.c) / dt,
-        hueDelta(xp.h, x.h) / dt,
-        (x.a - xp.a) / dt
+        (x.a - xp.a) / dt,
+        (x.b - xp.b) / dt,
+        (x.t - xp.t) / dt
       );
       xp = x;
       const k2_stable = Math.max(
@@ -166,16 +198,16 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
       );
       y = color(
         y.l + dt * yd.l,
-        y.c + dt * yd.c,
-        y.h + dt * yd.h,
-        y.a + dt * yd.a
+        y.a + dt * yd.a,
+        y.b + dt * yd.b,
+        y.t + dt * yd.t
       );
 
       yd = color(
         yd.l + dt * (x.l + k3 * xd.l - y.l - k1 * yd.l) / k2_stable,
-        yd.c + dt * (x.c + k3 * xd.c - y.c - k1 * yd.c) / k2_stable,
-        yd.h + dt * (x.h + k3 * xd.h - y.h - k1 * yd.h) / k2_stable,
-        yd.a + dt * (x.a + k3 * xd.a - y.a - k1 * yd.a) / k2_stable
+        yd.a + dt * (x.a + k3 * xd.a - y.a - k1 * yd.a) / k2_stable,
+        yd.b + dt * (x.b + k3 * xd.b - y.b - k1 * yd.b) / k2_stable,
+        yd.t + dt * (x.t + k3 * xd.t - y.t - k1 * yd.t) / k2_stable
       );
     };
 
@@ -185,7 +217,7 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
       get value() { return y; },
       set value(v) {
         y = xp = x = v;
-        yd = { l: 0, c: 0, h: 0, a: 0 };
+        yd = color(0, 0, 0, 0);
       },
       get target() { return x; },
       set target(v) { x = v; },
@@ -200,12 +232,12 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
       set(v) { this.value = v; return this; },
       animate(v) { this.target = v; return this; },
       impulse(v) {
-        this.velocity = {
-          l: this.velocity.l + (v.l ?? 0),
-          c: this.velocity.c + (v.c ?? 0),
-          h: this.velocity.h + (v.h ?? 0),
-          a: this.velocity.a + (v.a ?? 0)
-        };
+        this.velocity = color(
+          this.velocity.l + (v.l ?? 0),
+          this.velocity.a + (v.a ?? 0),
+          this.velocity.b + (v.b ?? 0),
+          this.velocity.t + (v.t ?? 0)
+        );
         return this;
       },
       stop() { this.value = y; return this; },
@@ -232,27 +264,35 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
       Text: createWidget((content) => ({
         content,
         progress: spring(1),
-        x: spring(0),
-        y: spring(0),
-        width: 0,
-        height: 0,
-        anchorX: spring(0.5),
-        anchorY: spring(0.5),
         style: {
           size: spring(16),
           family: "sans-serif",
           weight: spring(400),
           color: springColor(black),
         },
+        x: spring(0),
+        y: spring(0),
+        anchorX: spring(0.5),
+        anchorY: spring(0.5),
+        transform: {
+          scale: spring(1),
+          squash: spring(0),
+          lean: spring(0),
+          rotation: spring(0),
+        },
         advance(dt) {
           this.progress.update(dt);
+          this.style.size.update(dt);
+          this.style.weight.update(dt);
+          this.style.color.update(dt);
           this.x.update(dt);
           this.y.update(dt);
           this.anchorX.update(dt);
           this.anchorY.update(dt);
-          this.style.size.update(dt);
-          this.style.weight.update(dt);
-          this.style.color.update(dt);
+          this.transform.scale.update(dt);
+          this.transform.squash.update(dt);
+          this.transform.lean.update(dt);
+          this.transform.rotation.update(dt);
         },
         drawTo(ctx) {
           ctx.save();
@@ -270,13 +310,29 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
           const descent = metrics.actualBoundingBoxDescent;
           const height = ascent;
 
-          const x = this.x - width * this.anchorX;
-          const y = this.y - height * this.anchorY + ascent;
+          ctx.translate(this.x, this.y);
+
+          ctx.scale(this.transform.scale, this.transform.scale);
+
+          const scaleX = 1 - this.transform.squash;
+          const scaleY = 1 + this.transform.squash;
+          ctx.scale(scaleX, scaleY);
+
+          ctx.transform(
+            1, 0,
+            this.transform.lean, 1,
+            0, 0
+          );
+
+          ctx.rotate(this.transform.rotation * Math.PI / 180);
+
+          const x = -width * this.anchorX;
+          const y = -height * this.anchorY + ascent;
 
           ctx.fillText(text, x, y);
 
           ctx.restore();
-        }
+        },
       })),
     },
     time: () => frame / fps,
