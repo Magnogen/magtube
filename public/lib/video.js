@@ -180,9 +180,7 @@ const Video = (name = 'project', width = 1920, height = 1080, fps = 30) => {
       k3 = response * stiffness / (2 * Math.PI * frequency);
     };
     updateConstants();
-
-    const hueDelta = (a, b) => ((b - a + 540) % 360) - 180;
-
+    
     const update = (dt) => {
       if (dt <= 0) return;
       const xd = color(
